@@ -1,6 +1,8 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
+using System.Collections.Generic;
 
 namespace Platformer
 {
@@ -11,7 +13,35 @@ namespace Platformer
     {
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
+        Character player;
+        Platform platform;
+        List<Platform> platforms;
+        Vector2 platformPosition;
+        Texture2D platformImage;
+        Texture2D characterImage;
+        Color platformTint;
+      
+        Vector2 characterPosition;
+       
+        
+        Texture2D spritesheet;
+        
+        List<Frame> idleFrames;
+        List<Frame> runningLeftFrames;
+        List<Frame> runningRightFrames;
+        List<Frame> jumpingFrames;
+       
+        float spriteSheetFrameGap = 79;
+        float idleSpriteSheetOrigin = 0;
+        int spriteIdleIndex = 0;
+        float runningSpriteSheetOrigin = 0;
+        float jumpingSpriteSheetOrigin = 0;
+        KeyboardState ks;
 
+       
+     
+        //create a list of frames for each state (Idle, Run, Jump)
+        //new Frame(Vector2.Zero, new Rectangle());
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
@@ -37,10 +67,41 @@ namespace Platformer
         /// </summary>
         protected override void LoadContent()
         {
+        
+           platforms = new List<Platform>();
+            platformImage = Content.Load<Texture2D>("Bricks3");
+            platformTint = Color.White;
+            platformPosition = new Vector2(0, GraphicsDevice.Viewport.Height - platformImage.Height );
+            platform = new Platform(platformImage, platformPosition, platformTint);
+            spritesheet = Content.Load<Texture2D>("spritesheet");
+            
+          
+            for (int x = 0; x < 5; x++)
+            {
+                for (int i = 0; i < GraphicsDevice.Viewport.Width; i += platform.image.Width)
+                {
+
+                    platforms.Add(new Platform(platformImage, platformPosition, Color.White));
+                    platformPosition.X += platformImage.Width;
+                }
+               
+                    platformPosition.X = (platforms[x+1].position.X * 3);
+
+                
+                
+                platformPosition.Y -= platformImage.Height;
+            }
+
+               
+         
+
+
+            characterImage = Content.Load<Texture2D>("spritesheet");
+            characterPosition = new Vector2(platforms[0].position.X, GraphicsDevice.Viewport.Height/2);
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-
-            // TODO: use this.Content to load your game content here
+            player = new Character(characterImage, characterPosition, Color.White);
+            // TODO: use this.Content to load your game content here6
         }
 
         /// <summary>
@@ -51,19 +112,48 @@ namespace Platformer
         {
             // TODO: Unload any non ContentManager content here
         }
-
+      
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
+       
         protected override void Update(GameTime gameTime)
         {
+            ks = Keyboard.GetState();
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
             // TODO: Add your update logic here
+           
+            player.characterMovement(ks);
+            
+         
 
+         
+                for (int i = 0; i < platforms.Count; i++)
+                {
+                    if (player.hitbox.Intersects(platforms[i].hitbox) )
+                    {
+                        player.falling = false;
+                        player.onPlatform = true;
+                    break;
+                    }
+                    else 
+                    {
+                        player.falling = true;
+                        player.onPlatform = false;
+                    }
+                    
+                }
+            if(player.onPlatform)
+            {
+                player.falling = false;
+                player.jumping = false;
+            }
+               
+            
             base.Update(gameTime);
         }
 
@@ -73,11 +163,20 @@ namespace Platformer
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         protected override void Draw(GameTime gameTime)
         {
+           
             GraphicsDevice.Clear(Color.CornflowerBlue);
-
+            spriteBatch.Begin();
             // TODO: Add your drawing code here
-
+           // player.Draw(spriteBatch);
+            for(int i =0;i < platforms.Count;i++)
+            {
+                platforms[i].Draw(spriteBatch);
+            }
+          
+            spriteBatch.Draw(characterImage, player.position, idleFrames[spriteIdleIndex].SourceRectangle, Color.White, 0f, idleFrames[0].Origin, Vector2.One, SpriteEffects.None, 0f);
+            spriteBatch.End();
             base.Draw(gameTime);
+            
         }
     }
 }
