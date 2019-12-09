@@ -13,7 +13,7 @@ namespace Platformer
     class Character 
     {
         Dictionary<States, List<Frame>> Animations;
-        
+        #region Enums
         enum movement
         {
             StandStill,
@@ -22,16 +22,35 @@ namespace Platformer
             Jump
 
         };
+        #region States
         enum States
         {
             Moving,
             Jumping,
             Idle
-        };  
+        };
+        States currentState;
+        #endregion
+        #endregion
+
+        #region JumpLogic
+        public bool jumping = false;
+        public bool falling = false;
+        float gravity = 0.1f;
+        public float initialPositionJumpPosition;
+        bool doOnce = false;
+        public bool onPlatform = true;
+      
+        #endregion
+
+#region Frames
         List<Frame> idleFrames;
         List<Frame> runningFrames;
         List<Frame> jumpingFrames;
-        States currentState;
+        #endregion
+        #region Properties
+
+
         float initialSpeed
         {
             get
@@ -41,39 +60,26 @@ namespace Platformer
         }
         float CharSpeed = 0;
         
-        float velocity
-        {
-            get
-            {
-                return velocity;
-            }
-            set
-            {
-                velocity = value;
-            }
-        }
+        float velocity { get; set; }
+      
 
         float initialVelocity
         {
             get
             {
-                return 4f;
+                return 2f;
             }
-        } 
-        
-      //Animations[currentState][currentFram].sourceRectangle
-     
-      //Draw() -> draws current frame
-        public bool jumping = false;
-        public bool falling = false;
-        float gravity = 0.1f;
-        public float initialPositionJumpPosition;
-        bool doOnce = true;
-        public bool onPlatform = true;
-        int FrameIndex = 0;
-        TimeSpan updateTime = TimeSpan.FromMilliseconds(100);
-        TimeSpan elapsedTime = TimeSpan.Zero;
-        Vector2 Position { get; set; }
+        }
+
+       
+        //Animations[currentState][currentFram].sourceRectangle
+
+        //Draw() -> draws current frame
+
+       public Vector2 Position { get; set; }
+
+
+       
         public float Y
         {
             get
@@ -98,13 +104,33 @@ namespace Platformer
 
 
         }
-        Texture2D Image { get; set; }
+        #endregion
+        public Rectangle Hitbox
+        {
+            get
+            {
+                return Animations[currentState][FrameIndex].SourceRectangle;
+            }
+       
+        }
+
+
+        Texture2D Image { get;}
+        TimeSpan updateTime = TimeSpan.FromMilliseconds(100);
+        TimeSpan elapsedTime = TimeSpan.Zero;
+        int FrameIndex { get; set; }
+
+        SpriteEffects Effect = SpriteEffects.None;
         public Character(Texture2D image, Vector2 position, Color color) 
         {
+            Animations = new Dictionary<States, List<Frame>>();
+            Image = image;
+            Position = position;
             Initialize();
         }
         void Initialize()
         {
+            currentState = States.Idle;
             CreateFrames();
             Animations.Add(States.Moving, runningFrames);
             Animations.Add(States.Jumping, jumpingFrames);
@@ -120,7 +146,7 @@ namespace Platformer
             }
 
         }
-        void UpdateFrame(GameTime gameTime)
+       public void UpdateFrame(GameTime gameTime)
         {
             elapsedTime += gameTime.ElapsedGameTime;
             if(elapsedTime > updateTime)
@@ -157,9 +183,13 @@ namespace Platformer
         }
         void Jumping()
         {
-
-            
-               Y -= velocity;
+            if(!doOnce )
+            {
+                velocity = initialVelocity;
+            initialPositionJumpPosition = Hitbox.Bottom;
+                doOnce = true;
+            }
+            Y -= velocity;
                
                         if(velocity>0)
                         {
@@ -170,6 +200,7 @@ namespace Platformer
                         {
                             
                             falling = true;
+                velocity = initialVelocity;
                             jumping = false;
                         }
               
@@ -178,28 +209,47 @@ namespace Platformer
         {
            
                 Y += velocity;
-                if(Y < initialPositionJumpPosition)
+                if(Hitbox.Bottom < initialPositionJumpPosition)
                 {
                     velocity += gravity;
                 }
                 else 
                 {
                     falling = false;
-                
-                }
+                velocity = initialVelocity;
+                doOnce = false;
+            }
         }
            
-              
+              //SwitchState(State)
+              //switches currentState , sets FrameIndex and elapsedTime = 0
            
-        
-        public void characterMovement(KeyboardState ks)
+          void SwitchStateProperties(States state)
+        {
+            currentState = state;
+            FrameIndex = 0;
+            elapsedTime = TimeSpan.Zero; 
+        }
+        void SwitchState(States state)
+        {
+            if(currentState != state)
+            {
+             if(state == States.Idle)
+             {
+                    CharSpeed = 0;
+                    CharSpeed = 0;
+             }
+                SwitchStateProperties(state);
+            }
+        }
+        public void characterMovement(KeyboardState ks, KeyboardState lastks)
         {
 
 
             //use if statements
 
 
-            if (ks.IsKeyDown(Keys.Up))
+            if (ks.IsKeyDown(Keys.Up) && !lastks.IsKeyDown(Keys.Up) && !jumping && !falling)
             {     //make sure they are floats
                   //y -= velocity
                   //velocity -= gravity
@@ -207,20 +257,18 @@ namespace Platformer
                   //velocity = speed of char
                   //gravity = .1
                 jumping = true;
-                if (doOnce)
-                {
-                    initialPositionJumpPosition = Y;
-                    doOnce = false;
-                }
-                if(jumping)
-                { 
-                    Jumping();
-                    Falling();
-                }
+                SwitchState(States.Jumping);
+                //if(jumping)
+                //{ 
+                //    Jumping();
+                //    Falling();
+                //}
                 
             }
             if (ks.IsKeyDown(Keys.Left))
             {
+                Effect = SpriteEffects.FlipHorizontally;
+                SwitchState(States.Moving);
                 X -= CharSpeed;
                 if (CharSpeed < 3)
                 {
@@ -235,6 +283,9 @@ namespace Platformer
             }
             else if (ks.IsKeyDown(Keys.Right))
             {
+                Effect = SpriteEffects.None;
+                SwitchState(States.Moving);
+
                 X += CharSpeed;
                 if (CharSpeed < 3)
                 {
@@ -250,21 +301,29 @@ namespace Platformer
             }
             else if (ks.IsKeyUp(Keys.Up) && ks.IsKeyUp(Keys.Left) && ks.IsKeyUp(Keys.Right))
             {
-            CharSpeed = 0;
-               CharSpeed = 0;
+                SwitchState(States.Idle);
+            
             }
-            if (jumping && !falling)
+            if (jumping )
             {
 
                 Jumping();
 
             }
-            else if (!jumping && falling)
+            if (falling)
             {
                 Falling();
             }
 
         }
+
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            var currentFrame = Animations[currentState][FrameIndex];
+            spriteBatch.Draw(Image, Position, currentFrame.SourceRectangle, Color.White, 0f,currentFrame.Origin, Vector2.One, Effect, 0f);
+        }
+        //Draw function that draws current frame of current animation
+        //Animations[currentState][FrameIndex].SourceRectanlge
 
     }
 

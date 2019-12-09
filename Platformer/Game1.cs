@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿ 
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using System;
@@ -8,6 +9,7 @@ namespace Platformer
 {
     /// <summary>
     /// This is the main type for your game.
+    /// 12-8-2019 REMOVE INITIAL JUMP POSITION.
     /// </summary>
     public class Game1 : Game
     {
@@ -97,7 +99,7 @@ namespace Platformer
 
 
             characterImage = Content.Load<Texture2D>("spritesheet");
-            characterPosition = new Vector2(platforms[0].position.X, GraphicsDevice.Viewport.Height/2);
+            characterPosition = new Vector2(platforms[0].position.X, platforms[0].position.Y-65);
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
             player = new Character(characterImage, characterPosition, Color.White);
@@ -112,13 +114,14 @@ namespace Platformer
         {
             // TODO: Unload any non ContentManager content here
         }
-      
+
         /// <summary>
         /// Allows the game to run logic such as updating the world,
         /// checking for collisions, gathering input, and playing audio.
         /// </summary>
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
-       
+        KeyboardState lastKs;
+        bool onPlatform = false;
         protected override void Update(GameTime gameTime)
         {
             ks = Keyboard.GetState();
@@ -127,33 +130,51 @@ namespace Platformer
 
             // TODO: Add your update logic here
            
-            player.characterMovement(ks);
-            
-         
+            player.characterMovement(ks,lastKs);
+            player.UpdateFrame(gameTime);
 
-         
-                for (int i = 0; i < platforms.Count; i++)
+
+            for(int i =0;i< platforms.Count;i++)
+            {
+                if(player.Hitbox.Intersects(platforms[i].hitbox) && player.falling == true )
                 {
-                    if (player.hitbox.Intersects(platforms[i].hitbox) )
-                    {
-                        player.falling = false;
-                        player.onPlatform = true;
-                    break;
-                    }
-                    else 
-                    {
-                        player.falling = true;
-                        player.onPlatform = false;
-                    }
-                    
+                    player.falling = false;
+                    player.initialPositionJumpPosition = player.Position.Y;
+                    onPlatform = true;
                 }
-            if(player.onPlatform)
+              
+            }
+            if (player.falling && player.Y > GraphicsDevice.Viewport.Height - 100)
             {
                 player.falling = false;
-                player.jumping = false;
             }
-               
-            
+
+            //if (!onPlatform)
+            //{
+            //    player.falling = true;
+            //}
+            //   for (int i = 0; i < platforms.Count; i++)
+            //    {
+            //        if (player.hitbox.Intersects(platforms[i].hitbox) )
+            //        {
+            //            player.falling = false;
+            //            player.onPlatform = true;
+            //        break;
+            //        }
+            //        else 
+            //        {
+            //            player.falling = true;
+            //            player.onPlatform = false;
+            //        }
+
+            //    }
+            //if(player.onPlatform)
+            //{
+            //    player.falling = false;
+            //    player.jumping = false;
+            //}
+
+            lastKs = ks;
             base.Update(gameTime);
         }
 
@@ -167,13 +188,13 @@ namespace Platformer
             GraphicsDevice.Clear(Color.CornflowerBlue);
             spriteBatch.Begin();
             // TODO: Add your drawing code here
-           // player.Draw(spriteBatch);
+            player.Draw(spriteBatch);
             for(int i =0;i < platforms.Count;i++)
             {
                 platforms[i].Draw(spriteBatch);
             }
           
-            spriteBatch.Draw(characterImage, player.position, idleFrames[spriteIdleIndex].SourceRectangle, Color.White, 0f, idleFrames[0].Origin, Vector2.One, SpriteEffects.None, 0f);
+            //spriteBatch.Draw(characterImage, player.position, idleFrames[spriteIdleIndex].SourceRectangle, Color.White, 0f, idleFrames[0].Origin, Vector2.One, SpriteEffects.None, 0f);
             spriteBatch.End();
             base.Draw(gameTime);
             
