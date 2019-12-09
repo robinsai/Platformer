@@ -37,7 +37,7 @@ namespace Platformer
         public bool jumping = false;
         public bool falling = false;
         float gravity = 0.1f;
-        public float initialPositionJumpPosition;
+      
         bool doOnce = false;
         public bool onPlatform = true;
       
@@ -67,7 +67,7 @@ namespace Platformer
         {
             get
             {
-                return 2f;
+                return 3f;
             }
         }
 
@@ -186,7 +186,7 @@ namespace Platformer
             if(!doOnce )
             {
                 velocity = initialVelocity;
-            initialPositionJumpPosition = Hitbox.Bottom;
+          
                 doOnce = true;
             }
             Y -= velocity;
@@ -200,25 +200,23 @@ namespace Platformer
                         {
                             
                             falling = true;
-                velocity = initialVelocity;
+                            velocity = initialVelocity;
                             jumping = false;
                         }
               
         }
         void Falling()
         {
-           
+            if (jumping == false)
+            { 
                 Y += velocity;
-                if(Hitbox.Bottom < initialPositionJumpPosition)
-                {
-                    velocity += gravity;
-                }
-                else 
-                {
-                    falling = false;
-                velocity = initialVelocity;
-                doOnce = false;
             }
+            if(falling == false)
+            {
+                SwitchState(States.Idle);
+            }
+
+              
         }
            
               //SwitchState(State)

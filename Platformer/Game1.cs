@@ -136,10 +136,10 @@ namespace Platformer
 
             for(int i =0;i< platforms.Count;i++)
             {
-                if(player.Hitbox.Intersects(platforms[i].hitbox) && player.falling == true )
+                if(player.Hitbox.Intersects(platforms[i].hitbox) && player.falling == true)
                 {
                     player.falling = false;
-                    player.initialPositionJumpPosition = player.Position.Y;
+                  
                     onPlatform = true;
                 }
               
